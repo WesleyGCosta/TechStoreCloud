@@ -1,4 +1,5 @@
 ﻿using Api.Models.Requests;
+using Api.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 
 namespace Api.Endpoints
@@ -10,18 +11,20 @@ namespace Api.Endpoints
 
             var group = builder.MapGroup("api/auth").WithTags("Auth").RequireAuthorization();
 
-            group.MapPost("/login", async (UserManager<IdentityUser> userManager, LoginRequest loginRequest) =>
+            group.MapPost("/login", async (IAuthService authService, LoginRequest loginRequest) =>
             {
-                var user = await userManager.FindByNameAsync(loginRequest.Username);
+                var token = await authService.AuthenticateAsync(loginRequest.Username, loginRequest.Password);
 
-                return Results.Ok(loginRequest);
+                if (token is null) return Results.Unauthorized();
+
+                return Results.Ok(token);
             }).AllowAnonymous();
 
 
             group.MapPost("/register", async (UserManager<IdentityUser> userManager, RegisterRequest registerRequest) =>
             {
                 var user = new IdentityUser
-                {
+                { 
                     UserName = registerRequest.Username,
                     Email = registerRequest.Email
                 };

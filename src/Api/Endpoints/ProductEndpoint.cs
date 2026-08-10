@@ -1,4 +1,5 @@
 ﻿using Api.Models.Requests;
+using System.Security.Claims;
 
 namespace Api.Endpoints
 {
@@ -6,10 +7,11 @@ namespace Api.Endpoints
     {
         public static IEndpointRouteBuilder MapProductEndpoints(this IEndpointRouteBuilder builder)
         {
-            var group = builder.MapGroup("/products").WithTags("Products");
+            var group = builder.MapGroup("/products").WithTags("Products").RequireAuthorization();
 
-            group.MapGet("", () =>
+            group.MapGet("", (ClaimsPrincipal user) =>
             {
+
                 return TypedResults.Ok();
             });
 
