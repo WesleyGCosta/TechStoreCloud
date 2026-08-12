@@ -1,63 +1,33 @@
-using Api.Data;
-using Api.Endpoints;
-using Api.Services;
-using Api.Services.Interfaces;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Scalar.AspNetCore;
-using System.Text;
-
 var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddDbContext<IdentityContext>(
-    options => options.UseNpgsql("Host=localhost:5433;Database=TechStore;Username=postgres;Password=12345678").UseSnakeCaseNamingConvention());
-
-builder.Services
-    .AddIdentityApiEndpoints<IdentityUser>()
-    .AddEntityFrameworkStores<IdentityContext>();
-
-builder.Services.AddOpenApi();
-builder.Services.AddValidation();
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(opt => { 
-    opt.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-
-        IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(
-                    builder.Configuration["Jwt:Key"]!))
-    };
-
-});
-builder.Services.AddAuthorization();
-
-
-builder.Services.AddScoped<IAuthService, AuthService>();
-
 var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
+var produtos = new List<Produto>
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference();    
-}
+    new Produto(1, "Notebook", 4500.00m, 5),
+    new Produto(2, "Mouse", 120.00m, 20)
+};
 
-app.UseHttpsRedirection();
+app.MapGet("/health", () =>
+Results.Ok(new { status = "OK" }));
 
-app.UseAuthentication();
-app.UseAuthorization();
+app.MapGet("/api/produtos", () => Results.Ok(produtos));
 
-app.MapProductEndpoints();
-app.MapAuthEndpoints();
+app.MapPost("/api/produtos", (Produto produto) =>
+{
+    var novoProduto = produto with
+    {
+        Id = produtos.Count == 0
+    ? 1
+    : produtos.Max(p => p.Id) + 1
+    };
+    produtos.Add(novoProduto);
+    return Results.Created(
+    $"/api/produtos/{novoProduto.Id}",
+    novoProduto);
+});
 
-
-app.Run();
-
+app.Run("http://0.0.0.0:5000");
+public record Produto(
+int Id,
+string Nome,
+decimal Preco,
+int Estoque);
