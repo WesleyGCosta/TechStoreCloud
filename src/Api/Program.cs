@@ -1,5 +1,37 @@
+using Npgsql;
+
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
+
+var connectionString =
+    builder.Configuration.GetConnectionString("DataMarketDb")
+    ?? throw new InvalidOperationException(
+        "Connection string DataMarketDb não encontrada.");
+
+app.MapGet("/dbcheck", async () =>
+{
+    await using var connection =
+        new NpgsqlConnection(connectionString);
+    await connection.OpenAsync();
+
+    await using var command =
+        new NpgsqlCommand(
+            "SELECT current_database(), current_user;",
+            connection);
+
+    await using var reader =
+        await command.ExecuteReaderAsync();
+
+    await reader.ReadAsync();
+
+    return Results.Ok(new
+    {
+        status = "OK",
+        database = reader.GetString(0),
+        user = reader.GetString(1)
+    });
+});
+
 var produtos = new List<Produto>
 {
     new Produto(1, "Notebook", 4500.00m, 5),
@@ -9,20 +41,47 @@ var produtos = new List<Produto>
 app.MapGet("/health", () =>
 Results.Ok(new { status = "OK" }));
 
-app.MapGet("/api/produtos", () => Results.Ok(produtos));
-
-app.MapPost("/api/produtos", (Produto produto) =>
+app.MapGet("/api/produtos", async () =>
 {
-    var novoProduto = produto with
+    var produtos = new List<Produto>();
+
+    await using var connection =
+        new NpgsqlConnection(connectionString);
+    await connection.OpenAsync();
+    await using var command =
+     new NpgsqlCommand(
+         "SELECT id, nome, preco, estoque FROM produtos ORDER BY id;",
+         connection);
+    await using var reader =
+        await command.ExecuteReaderAsync();
+    while (await reader.ReadAsync())
     {
-        Id = produtos.Count == 0
-    ? 1
-    : produtos.Max(p => p.Id) + 1
-    };
-    produtos.Add(novoProduto);
-    return Results.Created(
-    $"/api/produtos/{novoProduto.Id}",
-    novoProduto);
+        produtos.Add(new Produto(
+            reader.GetInt32(0),
+            reader.GetString(1),
+            reader.GetDecimal(2),
+            reader.GetInt32(3)
+        ));
+    }
+    return Results.Ok(produtos);
+});
+
+app.MapPost("/api/produtos", async (Produto produto) =>
+{
+    await using var connection = new NpgsqlConnection(connectionString);
+    await connection.OpenAsync();
+
+    await using var command = new NpgsqlCommand(
+        @"INSERT INTO produtos (nome, preco, estoque)              
+        VALUES (@nome, @preco, @estoque)               
+        RETURNING id;", connection);
+
+    command.Parameters.AddWithValue("nome", produto.Nome);
+    command.Parameters.AddWithValue("preco", produto.Preco);
+    command.Parameters.AddWithValue("estoque", produto.Estoque);
+    var id = (int)(await command.ExecuteScalarAsync())!;
+    var novoProduto = produto with { Id = id };
+    return Results.Created($"/api/produtos/{id}", novoProduto);
 });
 
 app.Run("http://0.0.0.0:5000");
