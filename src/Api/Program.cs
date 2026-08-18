@@ -3,6 +3,9 @@ using Npgsql;
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 var connectionString =
     builder.Configuration.GetConnectionString("DataMarketDb")
     ?? throw new InvalidOperationException(
@@ -31,12 +34,6 @@ app.MapGet("/dbcheck", async () =>
         user = reader.GetString(1)
     });
 });
-
-var produtos = new List<Produto>
-{
-    new Produto(1, "Notebook", 4500.00m, 5),
-    new Produto(2, "Mouse", 120.00m, 20)
-};
 
 app.MapGet("/health", () =>
 Results.Ok(new { status = "OK" }));
