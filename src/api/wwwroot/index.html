@@ -92,34 +92,33 @@
     </div>
 
     <script>
-            async function carregarProdutos() {
+        async function carregarProdutos() {
 
-                const resposta = await fetch('/api/produtos');
-                const produtos = await resposta.json();
+            const resposta = await fetch('/api/produtos');
+            const produtos = await resposta.json();
 
-                const tabela =
-                    document.getElementById('tabela-produtos');
+            const tabela =
+                document.getElementById('tabela-produtos');
 
-                tabela.innerHTML = '';
+            tabela.innerHTML = '';
 
-                produtos.forEach(produto => {
+            produtos.forEach(produto => {
 
-                    const linha = document.createElement('tr');
+                const linha = document.createElement('tr');
 
-                    linha.innerHTML = `
-                        <td>${produto.id}</td>
-                        <td>${produto.nome}</td>
-                        <td>R$ ${Number(produto.preco).toFixed(2)}</td>
-                        <td>${produto.estoque}</td>
-                    `;
+                linha.innerHTML = `
+                    <td>${produto.id}</td>
+                    <td>${produto.nome}</td>
+                    <td>R$ ${Number(produto.preco).toFixed(2)}</td>
+                    <td>${produto.estoque}</td>
+                `;
 
-                    tabela.appendChild(linha);
-                });
-            }
+                tabela.appendChild(linha);
+            });
+        }
 
-            carregarProdutos();
-    </script
-<script src="cadastro-produto.js"></script>
-
+        carregarProdutos();
+    </script>
+    <script src="cadastro-produto.js"></script>
 </body>
 </html>
