@@ -10,7 +10,8 @@ formProduto.addEventListener('submit', async function (event) {
     };
 
     try {
-        const resposta = await fetch('/api/produtos', {
+
+        const resposta = await fetch('http://18.218.224.199:5000/api/produtos', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

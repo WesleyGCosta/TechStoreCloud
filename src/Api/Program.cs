@@ -1,7 +1,21 @@
 using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowS3Frontend", policy =>
+    {
+        policy.WithOrigins("http://datamarket-frontend-us-east-2.s3-website.us-east-2.amazonaws.com")
+        .AllowAnyHeader()
+        .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
+app.UseCors("AllowS3Frontend");
+
+
+
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
